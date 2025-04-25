@@ -1,0 +1,105 @@
+# ============================================================================
+# Traefik STATIC CONFIG 
+# ============================================================================
+# Static Config traefik.yml 
+#     other *.yml files are dynamic config files.  
+#
+global:
+  checkNewVersion: true
+#
+api:
+  dashboard: true
+  debug: true
+
+entryPoints: 
+  http:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: https
+          scheme: https
+    forwardedHeaders:
+      trustedIPs: #&trustedIps
+        - 10.0.0.0/24
+        - 127.0.0.1/32
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+        # Start of Cloudlare's public IP list (https://www.cloudflare.com/ips/) // this is not used as using CloudflareWarp PLUGIN.  
+        # - 103.21.244.0/22
+        # - ... 
+        # End of Cloudlare's public IP list
+  https:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt 
+      #tls: {} #optionally use the above two lines and use certResolver rather than .../configs/tls.yml 
+      middlewares:
+       - my-bouncer-container@file
+       - cloudflarewarp-plugin-af@file
+    forwardedHeaders:
+      trustedIPs: #*trustedIps
+        - 10.0.0.0/24 #these are not needed with the above &trustedIps / *trustedIps
+        - 127.0.0.1/32
+        - 172.16.0.0/12
+        - 192.168.0.0/16
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    #defaultRule: "Host(`{{ index .Labels \"com.docker.compose.service\"}}.{{ env "DOMAIN" }}`)"
+    defaultRule: "Host(`{{ index .Labels \"com.docker.compose.service\"}}.example.com`)" #REVISIT... if above works, replace with env variable
+    network: proxy
+  file:
+    directory: "/configs"
+    watch: true
+
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      #caServer: "https://acme-v02.api.letsencrypt.org/directory" #Production environment for LE (default)
+      #caserver: "https://acme-staging-v02.api.letsencrypt.org/directory" #staging environment of LE, enable for temp/non-production/staging certs
+      #email: {{ env "EMAILFORRESOLVER" }} # --or-- {env "emailforresolver"} #REVISIT: delete below if the provided works
+      email: my.email@example.com
+      storage: acme.json #see volumes: ./data/certs/...
+      dnsChallenge:
+        provider: cloudflare
+        resolvers:
+          - "1.1.1.1:53"
+          - "1.0.0.1:53"
+      #  delayBeforeCheck: "20"
+      #disablePropagationCheck: true #uncomment if issues pulling certificates through cloudflare, setting to true disables the need to wait for the propagation of the TXT record to all authoritative name servers.
+
+experimental:
+  plugins:
+    # crowdsec-bouncer-traefik-plugin: #this was disabled when container method worked and this did not, even though this was more efficent
+    #   moduleName: "github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin"
+    #   version: "v1.3.5"
+    cloudflarewarp:
+      modulename: github.com/BetterCorp/cloudflarewarp
+      version: v1.3.0
+
+#this was modified for Crowdsec here: https://blog.lrvt.de/configuring-crowdsec-with-traefik/  
+accessLog:
+  filePath: "/logs/traefik.log"
+  format: json
+  filters:
+    statusCodes:
+      - "200-299" # log successful http requests
+      - "400-599" # log failed http requests
+  # collect logs as in-memory buffer before writing into log file
+  bufferingSize: 0
+  fields:
+    headers:
+      defaultMode: drop # drop all headers per default
+      names:
+          User-Agent: keep # log user agent strings
+#  stdout: true # ... REVISIT WIP ... looking to output to log AND stdout silmultaneously... 
+
+log:
+  filePath: "/logs/traefik.log" #REVISIT logs section of: https://blog.lrvt.de/configuring-crowdsec-with-traefik/ #filepath was commented because it was disabling logging to docker/portainer and putputting to the file, I wanted log in container.   #ALSO: https://www.youtube.com/watch?v=bGOANkuxRNA at 12:31 mentions this might should be defined here. 
+  level: ERROR #Can be: DEBUG (more), INFO (less), ERROR (even less)
+  maxBackups: 3 #see https://doc.traefik.io/traefik/observability/logs/ for more info
+  maxSize: 100

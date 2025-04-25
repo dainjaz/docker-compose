@@ -1,0 +1,32 @@
+http:
+  routers:
+    nextcloud:
+      rule: "Host(`nextcloud.example.com`)"
+      entrypoints:
+        - "https"
+      service: nextcloud
+      middlewares:
+        - https-redirect
+      #  - nextcloud-chain
+        - internal-ipallowlist@file
+        - nextcloud-secure-headers
+      tls: #{}
+        domains:
+          - main:  "nextcloud.example.com"
+
+  services:
+    nextcloud:
+      loadBalancer:
+        servers:
+          - url: "https://10.0.0.220:11000" # Adjust to match APACHE_PORT and APACHE_IP_BINDING. See https://github.com/nextcloud/all-in-one/blob/main/reverse-proxy.md#adapting-the-sample-web-server-configurations-below
+        passHostHeader: true
+
+# Everything below here is commented out.
+
+#    nextcloud-chain:
+#      chain:
+#        middlewares:
+#          # - ... (e.g. rate limiting middleware)
+#          - internal-ipallowlist@file
+#          #- https-redirect
+#          - nextcloud-secure-headers

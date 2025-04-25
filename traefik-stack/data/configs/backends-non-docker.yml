@@ -1,0 +1,99 @@
+# Dynamic configuration, 'backends-non-docker.yml'
+#     Each Non-Docker Backend server/web interface/service is defined below.  Each Backend definition has a router and a service component.  
+#
+http:
+#
+# Routers
+# # # # # # # # # # # # # # # # # # # #
+  routers:
+    jetkvm-https:
+      entryPoints:
+        - "http"
+      rule: "Host(`kvm01.example.com`)" #REVISIT... replace with env variable
+      middlewares:
+        - default-headers@file
+        - internal-ipallowlist@file
+        - addprefix-jetkvm@file
+      #  - https-redirectscheme@file
+      tls: {}
+      service: jetkvm
+#
+    frigate-https:
+      entryPoints:
+        - "http"
+      rule: "Host(`frigate.example.com`)"
+      middlewares:
+        - default-headers@file
+        - internal-ipallowlist@file
+        - addprefix-frigate@file
+      #  - https-redirectscheme@file
+      tls: {}
+      service: frigate
+
+    nas-https:
+      entryPoints:
+        - "https"
+      rule: Host(`nas.example.com`) #REVISIT... replace with env variable
+      service: "nas"
+      tls: {}
+      middlewares:
+        - internal-ipallowlist@file
+        - default-headers
+
+    homeassistant-https:
+      entryPoints:
+        - "http"
+        - "https"
+      rule: Host(`ha.example.com`) #REVISIT... replace with env variable
+      service: "homeassistant"
+      #tls: {}
+      tls:
+        certResolver: letsencrypt 
+      middlewares:
+        - internal-ipallowlist@file
+        - default-headers@file
+# #
+    esxi-https:
+      entryPoints:
+        - "http"
+        - "https"
+      rule: Host(`esxi.example.com`) #REVISIT... replace with env variable
+      service: "esxi"
+      tls: {}
+      middlewares:
+        - addprefix-esxi@file
+        - internal-ipallowlist@file
+        - default-headers@file
+#
+# Services
+# # # # # # # # # # # # # # # # # # # #
+  services:
+    jetkvm:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.12"
+        passHostHeader: true
+# #
+    frigate:
+      loadBalancer:
+        servers:
+          - url: "http://10.0.0.110:5000"
+        passHostHeader: true
+# #   
+    homeassistant:
+      loadBalancer:
+        servers:
+          - url: http://10.0.0.15:8123
+        passHostHeader: true
+# #
+    nas:
+      loadBalancer:
+        servers:
+          - url: https://10.0.0.25
+        passHostHeader: true
+# #
+    esxi:
+      loadBalancer:
+        servers:
+          - url: "https://10.0.0.10:443"
+        passHostHeader: true

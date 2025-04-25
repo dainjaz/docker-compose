@@ -1,0 +1,114 @@
+# Dynamic Configuration
+# This file, and others, allow us to define, among other things, middleware of Traefik.
+# # # # # # # # # # # # # # # # # # # #
+#
+http:
+  middlewares:
+    # middleware:  IP Allow list
+    #              # Another HOWTO https://www.reddit.com/r/selfhosted/comments/1dcn19v/standing_up_the_crowdsec_bouncer_plugin_in_traefik/
+    # # # # # # # # # # # # # # # # # # # #
+    internal-ipallowlist:
+      ipAllowList:
+        sourceRange:
+          - "127.0.0.1/32"
+          - "192.168.0.0/24" # Docker? Are these necessary?
+          - "172.16.0.0/12" # Docker? Are these necessary?
+          - "10.0.0.0/24" # Local network IP Range
+    
+    # middleware: Crowdsec Bouncer container  based on:  https://github.com/JamesTurland/JimsGarage/blob/main/Crowdsec/Traefik/config.yaml
+    # # # # # # # # # # # # # # # # # # # #
+    my-bouncer-container:
+      forwardauth:
+        address: http://crowdsec-bouncer:8080/api/v1/forwardAuth
+        trustForwardHeader: true
+    #
+    # middleware: CloudflareWarp plugin. https://plugins.traefik.io/plugins/62e97498e2bf06d4675b9443/real-ip-from-cloudflare-proxy-tunnel  
+    # # # # # # # # # # # # # # # # # # # #
+    cloudflarewarp-plugin-af:
+      plugin:
+        cloudflarewarp:
+          disableDefault: false
+          trustip: # Trust IPS not required if disableDefault is false - we will allocate Cloud Flare IPs automatically
+            - "2400:cb00::/32" #REVISIT remove later?
+            - 10.0.0.0/24     #REVISIT ?
+            - 172.16.0.0/12
+            - 192.168.0.0/16
+            - 127.0.0.1/32
+    #
+    # middleware: for non-docker external services cleanup hostnames  
+    # # # # # # # # # # # # # # # # # # # #
+#
+    addprefix-frigate:
+      addPrefix:
+        prefix: "/"
+#
+    addprefix-jetkvm:
+      addPrefix:
+        prefix: "/login-local"
+#
+    addprefix-esxi:
+      addPrefix:
+        prefix: "/ui/#/"
+#
+    default-headers:
+      headers:
+        frameDeny: true
+        sslRedirect: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+    https-redirect: #added for nextcloud
+      redirectScheme:
+        scheme: https
+        permanent: true
+
+    nextcloud-secure-headers: #added for nextcloud
+      headers:
+        hostsProxyHeaders:
+          - "X-Forwarded-Host"
+        referrerPolicy: "same-origin"
+        customResponseHeaders:
+          X-Robots-Tag: "none"
+#
+# REVISIT
+#serversTransport: The below is is used to reference insecure transports in other containers ie: traefik.http.services.example-svc.loadBalancer.serversTransport=insescuretransport@file
+#    insecureSkipVerify: false #This had four spaces/two tabs in example, so replicated here
+serversTransport:
+  insecureSkipVerify: true
+
+
+
+# Everything below here is commented out.
+
+    # middleware: Crowdsec Bouncer plugin based on:  https://www.reddit.com/r/selfhosted/comments/1dcn19v/comment/l7zs5hw/ #this didnt work, swapped back to container
+    #              # Another HOWTO https://www.reddit.com/r/selfhosted/comments/1dcn19v/standing_up_the_crowdsec_bouncer_plugin_in_traefik/
+    # # # # # # # # # # # # # # # # # # # #
+    # my-bouncer-pulgin:
+    #   plugin:
+    #     crowdsec-bouncer-traefik-plugin:
+    #       enabled: true
+    #       crowdsecLapiHost: crowdsec:8080
+    #       CrowdsecLapiKey: {{env "CROWDSEC_BOUNCER_API_KEY"}}
+    #       defaultDecisionSeconds: 60
+    #       crowdsecMode: live
+    #       crowdsecAppsecEnabled: false
+    #       crowdsecAppsecHost: crowdsec:7422
+    #       crowdsecAppsecFailureBlock: true
+    #       crowdsecAppsecUnreachableBlock: true
+    #       crowdsecLapiScheme: http
+    #       forwardedHeadersTrustedIPs:
+    #         # private class ranges
+    #         - 10.0.0.0/24   #REVISIT mass commented below to test plugin bouncer
+    #         - 172.16.0.0/12
+    #         - 192.168.0.0/16
+    #         - 127.0.0.1/32
+    #       clientTrustedIPs:
+    #         # private class ranges
+    #         - 10.0.0.0/24
+    #         - 172.16.0.0/12
+    #         - 192.168.0.0/16
+    #         - 127.0.0.1/32
+    #

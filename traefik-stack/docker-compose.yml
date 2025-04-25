@@ -1,0 +1,44 @@
+services:
+
+  traefik:
+    image: traefik:v3.2
+    container_name: traefik
+    restart: unless-stopped
+    networks:
+      - proxy
+    ports:
+      - 80:80
+      - 443:443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./data/certs/acme.json:/acme.json:rw
+      - ./data/logs:/logs:rw
+      - ./data/configs:/configs:ro                   #DynamicConfigs_Folder
+      - ./data/config/traefik.yml:/traefik.yml:ro    #StaticConfig
+    environment:
+      - TZ=America/Chicago
+      - CF_DNS_API_TOKEN=${CLOUDFLARETOKEN}
+      - CF_API_EMAIL=${CLOUDFLAREEMAIL}
+      - EMAILFORRESOLVER=${EMAILFORRESOLVER}
+      - DOMAIN=${DOMAIN}
+      - CROWDSEC_BOUNCER_API_KEY=${CROWDSEC_BOUNCER_API_KEY}
+    #REVISIT - next three lines were disabled becasue was having issues starting container.  Re-enable?
+    #read_only: true
+    #security_opt:
+    #  - no-new-privileges
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.traefik-https.entrypoints=https
+      - traefik.http.routers.traefik-https.rule=Host(`proxy.${DOMAIN}`)
+      - traefik.http.middlewares.traefik-auth.basicauth.users=${TRAEFIKADMINCREDS}
+      - traefik.http.routers.traefik-https.middlewares=internal-ipallowlist@file,traefik-auth #,authelia@docker #REVISIT
+      - traefik.http.routers.traefik-https.service=api@internal
+      - traefik.http.routers.traefik-https.tls.certresolver=letsencrypt
+      - traefik.http.routers.traefik-https.tls.domains[0].main=${DOMAIN}
+      - traefik.http.routers.traefik-https.tls.domains[0].sans=*.${DOMAIN}
+      - traefik.http.routers.api.middlewares=authelia@docker
+
+networks:
+  proxy:
+    external: {}
+  #bridge: #is this needed for traefik to proxy containers in different networks??  I dont think so, I've added other containers to the proxy network... what about nextcloud as it creates additional containers and they may be in different network?  

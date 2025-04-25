@@ -100,6 +100,6 @@ accessLog:
 
 log:
   filePath: "/logs/traefik.log" #REVISIT logs section of: https://blog.lrvt.de/configuring-crowdsec-with-traefik/ #filepath was commented because it was disabling logging to docker/portainer and putputting to the file, I wanted log in container.   #ALSO: https://www.youtube.com/watch?v=bGOANkuxRNA at 12:31 mentions this might should be defined here. 
-  level: ERROR #Can be: DEBUG (more), INFO (less), ERROR (even less)
+  level: DEBUG #Can be: DEBUG (more), INFO (less), ERROR (even less)
   maxBackups: 3 #see https://doc.traefik.io/traefik/observability/logs/ for more info
   maxSize: 100

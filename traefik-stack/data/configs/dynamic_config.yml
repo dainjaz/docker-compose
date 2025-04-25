@@ -60,12 +60,16 @@ http:
         stsIncludeSubdomains: true
         stsPreload: true
 
-    https-redirect: #added for nextcloud
+    addprefix-nextcloud: #added for nextcloud, but as a test for myself
+      addPrefix:
+        prefix: "/login"
+
+    https-redirect:  #added for nextcloud, based on their config?
       redirectScheme:
         scheme: https
         permanent: true
 
-    nextcloud-secure-headers: #added for nextcloud
+    nextcloud-secure-headers: #added for nextcloud, based on their config?
       headers:
         hostsProxyHeaders:
           - "X-Forwarded-Host"

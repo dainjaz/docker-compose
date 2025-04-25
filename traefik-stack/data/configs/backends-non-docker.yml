@@ -20,7 +20,7 @@ http:
 #
     frigate-https:
       entryPoints:
-        - "http"
+        - "https"
       rule: "Host(`frigate.example.com`)"
       middlewares:
         - default-headers@file

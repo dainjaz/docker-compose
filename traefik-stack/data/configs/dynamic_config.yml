@@ -76,13 +76,6 @@ http:
         referrerPolicy: "same-origin"
         customResponseHeaders:
           X-Robots-Tag: "none"
-#
-# REVISIT
-#serversTransport: The below is is used to reference insecure transports in other containers ie: traefik.http.services.example-svc.loadBalancer.serversTransport=insescuretransport@file
-#    insecureSkipVerify: false #This had four spaces/two tabs in example, so replicated here
-serversTransport:
-  insecureSkipVerify: true
-
 
 
 # Everything below here is commented out.

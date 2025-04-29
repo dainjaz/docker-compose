@@ -103,3 +103,6 @@ log:
   level: DEBUG #Can be: DEBUG (more), INFO (less), ERROR (even less)
   maxBackups: 3 #see https://doc.traefik.io/traefik/observability/logs/ for more info
   maxSize: 100
+
+serversTransport:
+  insecureSkipVerify: true
